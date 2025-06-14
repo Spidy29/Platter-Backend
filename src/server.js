@@ -31,7 +31,7 @@ app.use("/api/auth", require("./routes/auth"));
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err);
+  console.error("Error:", err);
   res.status(500).json({ message: "Something broke!" });
 });
 
@@ -40,17 +40,24 @@ const PORT = process.env.PORT || 5000;
 
 async function startServer() {
   try {
+    // Test database connection
+    console.log("Connecting to database...");
     await sequelize.authenticate();
+    console.log("Database connection established.");
+
     if (process.env.NODE_ENV === "development") {
-      // Suppress sync logging
-      await sequelize.sync({ alter: true, logging: false });
+      console.log("Syncing database models...");
+      await sequelize.sync({ alter: false, logging: false });
+      console.log("Database sync complete.");
     }
+
     app.listen(PORT, () => {
-      console.clear(); // Clear previous console output
       console.log(`Server is running on port ${PORT}`);
     });
   } catch (error) {
-    console.error("Server failed to start");
+    console.error("Server failed to start. Error details:");
+    console.error(error.message);
+    console.error(error.stack);
     process.exit(1);
   }
 }
