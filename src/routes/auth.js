@@ -9,21 +9,44 @@ const validate = require("../middleware/validate");
 
 const registerValidation = [
   body("email").isEmail().withMessage("Invalid email address"),
-  body("password")
-    .isLength({ min: 6 })
-    .withMessage("Password must be at least 6 characters"),
   body("name").notEmpty().withMessage("Name is required"),
   body("userType").isIn(["HOTEL", "CUSTOMER"]).withMessage("Invalid user type"),
 ];
 
-const loginValidation = [
+const verifyOtpValidation = [
   body("email").isEmail().withMessage("Invalid email address"),
-  body("password").notEmpty().withMessage("Password is required"),
+  body("otp").isLength({ min: 6, max: 6 }).withMessage("Invalid OTP"),
 ];
 
-// Auth routes
-router.post("/register", registerValidation, validate, AuthController.register);
-router.post("/login", loginValidation, validate, AuthController.login);
+// Auth routes for Registration
+router.post(
+  "/register/initiate",
+  registerValidation,
+  validate,
+  AuthController.initiateRegistration
+);
+router.post(
+  "/register/verify",
+  verifyOtpValidation,
+  validate,
+  AuthController.verifyRegistrationOtp
+);
+
+// Auth routes for Login
+router.post(
+  "/login/initiate",
+  body("email").isEmail().withMessage("Invalid email address"),
+  validate,
+  AuthController.initiateLogin
+);
+router.post(
+  "/login/verify",
+  verifyOtpValidation,
+  validate,
+  AuthController.verifyLoginOtp
+);
+
+// Other auth routes
 router.post("/logout", authMiddleware, AuthController.logout);
 router.post("/refresh-token", AuthController.refreshToken);
 

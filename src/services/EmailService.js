@@ -2,13 +2,14 @@ const nodemailer = require("nodemailer");
 
 class EmailService {
   static transporter = nodemailer.createTransport({
-    service: "gmail",
+    host: "smtp.ethereal.email",
+    port: 587,
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASSWORD,
     },
   });
-  sdad;
+
   static async sendOTP(email, otp) {
     const mailOptions = {
       from: process.env.EMAIL_USER,
@@ -23,7 +24,11 @@ class EmailService {
     };
 
     try {
-      await this.transporter.sendMail(mailOptions);
+      const info = await this.transporter.sendMail(mailOptions);
+      console.log("\n=====================================");
+      console.log("📧 Test Email Preview URL:");
+      console.log(nodemailer.getTestMessageUrl(info));
+      console.log("=====================================\n");
       return true;
     } catch (error) {
       console.error("Error sending email:", error);
