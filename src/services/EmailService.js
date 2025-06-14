@@ -8,7 +8,7 @@ class EmailService {
       pass: process.env.EMAIL_PASSWORD,
     },
   });
-  sdad;
+
   static async sendOTP(email, otp) {
     const mailOptions = {
       from: process.env.EMAIL_USER,
