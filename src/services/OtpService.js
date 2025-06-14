@@ -7,13 +7,36 @@ class OtpService {
     return Math.floor(100000 + Math.random() * 900000).toString();
   }
 
+  static async cleanupOldOTPs() {
+    try {
+      // Delete expired OTPs
+      await Otp.destroy({
+        where: {
+          [Op.or]: [
+            { expiresAt: { [Op.lt]: new Date() } }, // Delete expired OTPs
+            { isUsed: true }, // Delete used OTPs
+          ],
+        },
+      });
+    } catch (error) {
+      console.error("OTP cleanup error:", error);
+    }
+  }
+
   static async createOTP(email, purpose) {
     try {
-      // Invalidate any existing OTPs for this email and purpose
-      await Otp.update(
-        { isUsed: true },
-        { where: { email, purpose, isUsed: false } }
-      );
+      // First, cleanup old OTPs
+      await this.cleanupOldOTPs();
+
+      // Then, invalidate any existing active OTPs for this email and purpose
+      await Otp.destroy({
+        where: {
+          email,
+          purpose,
+          isUsed: false,
+          expiresAt: { [Op.gt]: new Date() },
+        },
+      });
 
       const otp = this.generateOTP();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
@@ -24,11 +47,15 @@ class OtpService {
         otp,
         purpose,
         expiresAt,
+        attempts: 0,
+        isUsed: false,
       });
 
       // Send OTP via email
       const emailSent = await EmailService.sendOTP(email, otp);
       if (!emailSent) {
+        // If email fails, delete the OTP record and throw error
+        await otpRecord.destroy();
         throw new Error("Failed to send OTP email");
       }
 
@@ -41,6 +68,9 @@ class OtpService {
 
   static async verifyOTP(email, otp, purpose) {
     try {
+      // First, cleanup old OTPs
+      await this.cleanupOldOTPs();
+
       const otpRecord = await Otp.findOne({
         where: {
           email,
@@ -58,9 +88,10 @@ class OtpService {
       }
 
       // Mark OTP as used
-      await otpRecord.update({
-        isUsed: true,
-      });
+      await otpRecord.update({ isUsed: true });
+
+      // Delete this OTP since it's now used
+      await otpRecord.destroy();
 
       return true;
     } catch (error) {
@@ -76,12 +107,23 @@ class OtpService {
           email,
           purpose,
           isUsed: false,
+          expiresAt: {
+            [Op.gt]: new Date(),
+          },
         },
       });
 
       if (otpRecord) {
-        await otpRecord.increment("attempts");
-        return otpRecord.attempts + 1;
+        const attempts = otpRecord.attempts + 1;
+
+        // If too many attempts (e.g., more than 3), invalidate the OTP
+        if (attempts >= 3) {
+          await otpRecord.destroy();
+          return -1; // Indicate OTP is now invalid due to too many attempts
+        }
+
+        await otpRecord.update({ attempts });
+        return attempts;
       }
 
       return 0;
