@@ -13,20 +13,13 @@ class AuthController {
         return res.status(400).json({ message: "User already exists" });
       }
 
-      // Store registration data in session or temporary storage
-      req.session = req.session || {};
-      req.session.registration = {
-        email,
-        name,
-        userType,
-      };
-
       // Generate and send OTP
       await OtpService.createOTP(email, "SIGNUP");
 
       res.status(200).json({
         message: "OTP sent successfully. Please verify your email.",
         email,
+        tempData: { name, userType }, // Send back the data that will be needed for registration
       });
     } catch (error) {
       console.error("Registration initiation error:", error);
@@ -36,7 +29,7 @@ class AuthController {
 
   static async verifyRegistrationOtp(req, res) {
     try {
-      const { email, otp } = req.body;
+      const { email, otp, name, userType } = req.body;
 
       // Verify OTP
       const isValid = await OtpService.verifyOTP(email, otp, "SIGNUP");
@@ -44,17 +37,11 @@ class AuthController {
         return res.status(400).json({ message: "Invalid OTP" });
       }
 
-      // Get registration data
-      const registrationData = req.session?.registration;
-      if (!registrationData || registrationData.email !== email) {
-        return res
-          .status(400)
-          .json({ message: "Registration session expired" });
-      }
-
       // Create user
       const user = await User.create({
-        ...registrationData,
+        email,
+        name,
+        userType: userType.toUpperCase(), // Convert to uppercase to match enum
         isEmailVerified: true,
       });
 
@@ -69,9 +56,6 @@ class AuthController {
       TokenService.setTokenCookie(res, accessToken, false);
       TokenService.setTokenCookie(res, refreshToken, true);
 
-      // Clear registration session
-      delete req.session.registration;
-
       // Remove sensitive data from response
       const userResponse = user.toJSON();
       delete userResponse.password;
@@ -83,6 +67,12 @@ class AuthController {
       });
     } catch (error) {
       console.error("Registration verification error:", error);
+      if (error.name === "SequelizeValidationError") {
+        return res.status(400).json({
+          message: "Invalid user data",
+          errors: error.errors.map((e) => e.message),
+        });
+      }
       res.status(500).json({ message: "Internal server error" });
     }
   }

@@ -10,12 +10,18 @@ const validate = require("../middleware/validate");
 const registerValidation = [
   body("email").isEmail().withMessage("Invalid email address"),
   body("name").notEmpty().withMessage("Name is required"),
-  body("userType").isIn(["HOTEL", "CUSTOMER"]).withMessage("Invalid user type"),
+  body("userType")
+    .isIn(["HOTEL", "CUSTOMER"])
+    .withMessage("User type must be either HOTEL or CUSTOMER"),
 ];
 
 const verifyOtpValidation = [
   body("email").isEmail().withMessage("Invalid email address"),
   body("otp").isLength({ min: 6, max: 6 }).withMessage("Invalid OTP"),
+  body("name").notEmpty().withMessage("Name is required"),
+  body("userType")
+    .isIn(["HOTEL", "CUSTOMER"])
+    .withMessage("User type must be either HOTEL or CUSTOMER"),
 ];
 
 // Auth routes for Registration

@@ -37,7 +37,7 @@ class TokenService {
     }
   }
 
-  static setTokenCookie(res, token, isRefreshToken = false) {
+  static atsetTokenCookie(res, token, isRefreshToken = false) {
     const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
