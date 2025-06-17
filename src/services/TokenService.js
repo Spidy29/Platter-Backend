@@ -9,7 +9,7 @@ class TokenService {
         userType: user.userType,
       },
       process.env.JWT_ACCESS_SECRET,
-      { expiresIn: process.env.ACCESS_TOKEN_EXPIRE } // 24 hours
+      { expiresIn: process.env.ACCESS_TOKEN_EXPIRE || "24h" } // 24 hours
     );
   }
 
@@ -17,7 +17,7 @@ class TokenService {
     return jwt.sign(
       { id: user.id },
       process.env.JWT_REFRESH_SECRET,
-      { expiresIn: process.env.REFRESH_TOKEN_EXPIRE } // 7 days
+      { expiresIn: process.env.REFRESH_TOKEN_EXPIRE || "7d" } // 7 days
     );
   }
 
@@ -37,7 +37,7 @@ class TokenService {
     }
   }
 
-  static atsetTokenCookie(res, token, isRefreshToken = false) {
+  static setTokenCookie(res, token, isRefreshToken = false) {
     const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -46,9 +46,11 @@ class TokenService {
     };
 
     if (isRefreshToken) {
+      // Set refresh token to expire in 7 days
       cookieOptions.maxAge = 7 * 24 * 60 * 60 * 1000; // 7 days
       res.cookie("refreshToken", token, cookieOptions);
     } else {
+      // Set access token to expire in 24 hours
       cookieOptions.maxAge = 24 * 60 * 60 * 1000; // 24 hours
       res.cookie("accessToken", token, cookieOptions);
     }
