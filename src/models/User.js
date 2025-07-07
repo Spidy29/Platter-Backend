@@ -29,24 +29,38 @@ User.init(
     },
     password: {
       type: DataTypes.STRING,
-      allowNull: true, // null when using Google OAuth
+      allowNull: true, // null when using OAuth
     },
     userType: {
-      type: DataTypes.ENUM("HOTEL", "CUSTOMER"),
+      type: DataTypes.ENUM("HOTEL", "VIEWER"),
       allowNull: false,
-    },
-    googleId: {
-      type: DataTypes.STRING,
-      unique: true,
-      allowNull: true,
     },
     name: {
       type: DataTypes.STRING,
       allowNull: false,
     },
+    phoneNumber: {
+      type: DataTypes.STRING(10),
+      allowNull: true,
+      validate: {
+        is: /^[0-9]{10}$/,
+      },
+    },
+    profileImage: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     isEmailVerified: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
+    },
+    isPhoneVerified: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    status: {
+      type: DataTypes.ENUM("ACTIVE", "INACTIVE", "SUSPENDED"),
+      defaultValue: "ACTIVE",
     },
     refreshToken: {
       type: DataTypes.STRING,
@@ -54,10 +68,16 @@ User.init(
     },
     lastLogin: {
       type: DataTypes.DATE,
+      allowNull: true,
     },
-    status: {
-      type: DataTypes.ENUM("ACTIVE", "INACTIVE", "SUSPENDED"),
-      defaultValue: "ACTIVE",
+    preferences: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      defaultValue: {},
+    },
+    deviceInfo: {
+      type: DataTypes.JSON,
+      allowNull: true,
     },
   },
   {
